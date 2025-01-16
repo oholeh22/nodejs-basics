@@ -1,7 +1,14 @@
 import express from 'express';
 import { startServer } from './server.js';
+import { initMongoDB } from './db/initMongoDB.js';
 
-startServer();
+const bootstrap = async () => {
+  await initMongoDB();
+  startServer();
+};
+
+bootstrap();
+
 
 const PORT = 3000;
 
