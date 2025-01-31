@@ -3,6 +3,7 @@ import { createStudent, deleteStudent, updateStudent } from '../services/student
 import createHttpError from 'http-errors';
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
+import { parseFilterParams } from '../utils/parseFilterParams.js';
 
 
 
@@ -86,9 +87,15 @@ import { parseSortParams } from '../utils/parseSortParams.js';
 
   export const getStudentsController = async (req, res) => {
     const { page, perPage } = parsePaginationParams(req.query);
+    const { sortBy, sortOrder } = parseSortParams(req.query);
+    const filter = parseFilterParams(req.query);
+
     const students = await getAllStudents({
       page,
       perPage,
+      sortBy,
+      sortOrder,
+      filter,
     });
 
     res.json({
@@ -98,23 +105,49 @@ import { parseSortParams } from '../utils/parseSortParams.js';
     });
   };
 
-  export const getStudentsController = async (req, res) => {
-    const { page, perPage } = parsePaginationParams(req.query);
+  export const getAllStudents = async ({
+    page = 1,
+    perPage = 10,
+    sortOrder = SORT_ORDER.ASC,
+    sortBy = '_id',
+    filter = {},
+  }) => {
+    const limit = perPage;
+    const skip = (page - 1) * perPage;
 
-    const { sortBy, sortOrder } = parseSortParams(req.query);
+    const studentsQuery = StudentsCollection.find();
 
-    const students = await getAllStudents({
-      page,
-      perPage,
-      sortBy,
-      sortOrder,
-    });
+    if (filter.gender) {
+      studentsQuery.where('gender').equals(filter.gender);
+    }
+    if (filter.maxAge) {
+      studentsQuery.where('age').lte(filter.maxAge);
+    }
+    if (filter.minAge) {
+      studentsQuery.where('age').gte(filter.minAge);
+    }
+    if (filter.maxAvgMark) {
+      studentsQuery.where('avgMark').lte(filter.maxAvgMark);
+    }
+    if (filter.minAvgMark) {
+      studentsQuery.where('avgMark').gte(filter.minAvgMark);
+    }
 
-    res.json({
-      status: 200,
-      message: 'Successfully found students!',
+    const [studentsCount, students] = await Promise.all([
+      StudentsCollection.find().merge(studentsQuery).countDocuments(),
+      studentsQuery
+        .skip(skip)
+        .limit(limit)
+        .sort({ [sortBy]: sortOrder })
+        .exec(),
+    ]);
+
+    const paginationData = calculatePaginationData(studentsCount, perPage, page);
+
+    return {
       data: students,
-    });
+      ...paginationData,
+    };
   };
 
 
