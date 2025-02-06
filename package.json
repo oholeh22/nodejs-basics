@@ -20,6 +20,7 @@
     "pino-pretty": "^13.0.0"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "detect-port": "^2.1.0",
     "dotenv": "^16.4.7",
