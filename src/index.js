@@ -1,13 +1,16 @@
-import express from 'express';
-import { startServer } from './server.js';
 import { initMongoDB } from './db/initMongoDB.js';
+import { startServer } from './server.js';
+import { createDirIfNotExists } from './utils/createDirIfNotExists.js';
+import { TEMP_UPLOAD_DIR, UPLOAD_DIR } from './constants/index.js';
 
 const bootstrap = async () => {
   await initMongoDB();
+  await createDirIfNotExists(TEMP_UPLOAD_DIR);
+  await createDirIfNotExists(UPLOAD_DIR);
   startServer();
 };
 
-bootstrap();
+void bootstrap();
 
 
 const PORT = 3000;
@@ -37,4 +40,19 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+});
+
+app.post('/students', upload.single('avatar'), function (req, res, next) {
+  // Обробка завантаженого файлу
+});
+
+app.post('/students', upload.array('photos', 10), function (req, res, next) {
+  // Обробка завантажених файлів
+});
+
+app.post('/students', upload.fields([
+  { name: 'avatar', maxCount: 1 },
+  { name: 'gallery', maxCount: 8 }
+]), function (req, res, next) {
+  // Обробка завантажених файлів
 });
